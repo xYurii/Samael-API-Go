@@ -13,6 +13,20 @@ type UserAdapter struct {
 	Db *bun.DB
 }
 
+func (a UserAdapter) IsBlacklisted(ctx context.Context, u entities.User) bool {
+	b := entities.Blacklist{
+		ID: u.ID,
+	}
+	count, err := a.Db.NewSelect().Model(&b).Where("id = ?", b.ID).Count(ctx)
+	if err != nil {
+		return false
+	}
+	if count >= 1 {
+		return true
+	}
+	return false
+}
+
 func (a UserAdapter) GetUser(ctx context.Context, u entities.User) (user entities.User) {
 	a.Db.NewSelect().Model(&user).Where("id = ?", u.ID).Scan(ctx)
 	if user.ID == "" {

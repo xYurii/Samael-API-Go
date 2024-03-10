@@ -27,3 +27,16 @@ type User struct {
 	CreatedAt time.Time `bun:"\"createdAt\",nullzero,notnull,default:current_timestamp"`
 	UpdatedAt time.Time `bun:"\"updatedAt\",nullzero,notnull,default:current_timestamp"`
 }
+
+type Blacklist struct {
+	bun.BaseModel `bun:"table:\"Blacklists\",alias:b"`
+
+	ID        string    `bun:"id"`
+	BannedAt  uint64    `bun:"banned_at"`
+	Duration  uint64    `bun:"duration"`
+	Reason    string    `bun:"reason"`
+	BannedBy  string    `bun:"banned_by"`
+	Permanent bool      `bun:"permanent"`
+	CreatedAt time.Time `bun:"\"createdAt\",nullzero,notnull,default:current_timestamp"`
+	UpdatedAt time.Time `bun:"\"updatedAt\",nullzero,notnull,default:current_timestamp"`
+}

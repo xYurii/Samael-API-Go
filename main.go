@@ -2,10 +2,7 @@ package main
 
 import (
 	"apisamael/database"
-	"apisamael/entities"
 	"apisamael/router"
-	"context"
-	"fmt"
 
 	"github.com/joho/godotenv"
 )
@@ -21,13 +18,7 @@ func main() {
 		panic("cannot connect to the database")
 	}
 
-	u := entities.User{
-		ID:  "fodase",
-		Tag: "sua mãe.",
-	}
-
-	a := database.User.GetUser(context.Background(), u)
-	fmt.Println(a, a.ID)
+	// my token: S50SSP78c7jKH2sQbUVUX1PLcG3m80
 
 	router.Initiliaze()
 }
