@@ -16,16 +16,51 @@ type UserTasks struct {
 	Completed      bool  `json:"completed"`
 }
 
+type Transaction struct {
+	bun.BaseModel `bun:"table:\"Transactions\",alias:t"`
+
+	ID            int       `bun:"id"`
+	Source        int       `bun:"source"`
+	GivenBy       string    `bun:"given_by"`
+	ReceivedBy    string    `bun:"received_by"`
+	GivenByTag    string    `bun:"given_by_tag"`
+	ReceivedByTag string    `bun:"received_by_tag"`
+	GivenAt       int64     `bun:"given_at"`
+	Quantity      uint64    `bun:"quantity"`
+	OtherUsers    []string  `bun:"other_users"`
+	CreatedAt     time.Time `bun:"\"createdAt\",nullzero,notnull,default:current_timestamp"`
+	UpdatedAt     time.Time `bun:"\"updatedAt\",nullzero,notnull,default:current_timestamp"`
+}
+
+type Daily struct {
+	bun.BaseModel `bun:"table:\"Dailys\",alias:d"`
+
+	ID        string    `bun:"id"`
+	UserID    string    `bun:"user_id"`
+	Cooldown  int64     `bun:"cooldown"`
+	IP        string    `bun:"ip"`
+	Email     string    `bun:"email"`
+	Reward    uint64    `bun:"reward"`
+	Country   string    `bun:"country"`
+	Region    string    `bun:"region"`
+	City      string    `bun:"city"`
+	Org       string    `bun:"org"`
+	CreatedAt time.Time `bun:"\"createdAt\",nullzero,notnull,default:current_timestamp"`
+	UpdatedAt time.Time `bun:"\"updatedAt\",nullzero,notnull,default:current_timestamp"`
+}
+
 type User struct {
 	bun.BaseModel `bun:"table:\"Users\",alias:u"`
 
-	ID        string    `bun:"id,pk"`
-	UserTasks UserTasks `bun:"user_tasks,type:json"`
-	Money     uint64    `bun:"money"`
-	Daily     uint64    `bun:"daily"`
-	Tag       string    `bun:"tag"`
-	CreatedAt time.Time `bun:"\"createdAt\",nullzero,notnull,default:current_timestamp"`
-	UpdatedAt time.Time `bun:"\"updatedAt\",nullzero,notnull,default:current_timestamp"`
+	ID               string    `bun:"id,pk"`
+	UserTasks        UserTasks `bun:"user_tasks,type:json"`
+	Money            uint64    `bun:"money"`
+	Daily            uint64    `bun:"daily"`
+	Tag              string    `bun:"tag"`
+	IsPremium        bool      `bun:"is_premium"`
+	IsBoosterPremium bool      `bun:"is_booster_premium"`
+	CreatedAt        time.Time `bun:"\"createdAt\",nullzero,notnull,default:current_timestamp"`
+	UpdatedAt        time.Time `bun:"\"updatedAt\",nullzero,notnull,default:current_timestamp"`
 }
 
 type Blacklist struct {

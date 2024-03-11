@@ -7,7 +7,7 @@ import (
 )
 
 func initializeRoutes(router *gin.Engine) {
-	basePath := "/api/v1"
+	basePath := "/"
 	v1 := router.Group(basePath)
 	{
 		v1.GET("/rewardDaily", handler.RewardDaily)
