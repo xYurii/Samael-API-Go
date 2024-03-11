@@ -3,6 +3,8 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"time"
 )
@@ -46,6 +48,42 @@ type IPDetails struct {
 	Proxy         bool    `json:"proxy"`
 	Hosting       bool    `json:"hosting"`
 	Query         string  `json:"query"`
+}
+
+func RandomInt(min, max uint64) uint64 {
+	if min >= max {
+		return 0
+	}
+	rand.Seed(time.Now().UnixNano())
+	return uint64(rand.Intn(int(max-min+1))) + min
+}
+
+func GetUser(TOKEN string) (DiscordUser, error) {
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", "https://discord.com/api/v9/users/@me", nil)
+	if err != nil {
+		return DiscordUser{}, err
+	}
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", TOKEN))
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return DiscordUser{}, err
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return DiscordUser{}, err
+	}
+
+	var data DiscordUser
+	err = json.Unmarshal(body, &data)
+	if err != nil {
+		return DiscordUser{}, err
+	}
+
+	return data, nil
 }
 
 func GetIPInfo(ip string) (IPDetails, error) {

@@ -13,5 +13,5 @@ func Initiliaze() {
 	initializeRoutes(r)
 
 	port := os.Getenv("PORT")
-	r.Run("0.0.0.0:" + port)
+	r.Run(":" + port)
 }

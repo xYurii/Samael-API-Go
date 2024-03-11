@@ -30,6 +30,9 @@ func (a *UserAdapter) GetDailyReward(ctx context.Context, user utils.DiscordUser
 
 	a.Db.RunInTx(ctx, &sql.TxOptions{}, func(ctx context.Context, tx bun.Tx) error {
 		_, err := tx.Query(createOrUpdate)
+		if err != nil {
+			return err
+		}
 		_, err = tx.NewInsert().Model(&entities.Transaction{
 			Source:        3,
 			GivenBy:       user.ID,
@@ -43,24 +46,37 @@ func (a *UserAdapter) GetDailyReward(ctx context.Context, user utils.DiscordUser
 			UpdatedAt:     now,
 		}).Exec(ctx)
 
-		_, err = tx.NewInsert().Model(&entities.User{
-			Money:     userData.Money + quantity,
-			Daily:     uint64(nowMs),
-			Tag:       fmt.Sprintf("%s#%s", user.Username, user.Discriminator),
-			ID:        user.ID,
-			CreatedAt: now,
-			UpdatedAt: now,
-		}).
+		if err != nil {
+			return err
+		}
+
+		_, err = tx.NewInsert().
+			Model(&entities.User{
+				Money:     userData.Money + quantity,
+				Daily:     uint64(nowMs),
+				Tag:       fmt.Sprintf("%s#%s", user.Username, user.Discriminator),
+				ID:        user.ID,
+				CreatedAt: now,
+				UpdatedAt: now,
+			}).
 			On("CONFLICT (id) DO UPDATE").
 			Set("daily = EXCLUDED.daily").
 			Set("money = EXCLUDED.money").
 			Exec(ctx)
 
+		if err != nil {
+			return err
+		}
+
 		_, err = tx.NewUpdate().
 			Model(&entities.User{ID: user.ID}).
 			Set("user_tasks = ?", userData.UserTasks).
 			Exec(ctx)
-		return err
+
+		if err != nil {
+			return err
+		}
+		return nil
 	})
 
 }

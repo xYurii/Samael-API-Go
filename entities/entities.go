@@ -38,6 +38,7 @@ type Daily struct {
 	ID        string    `bun:"id"`
 	UserID    string    `bun:"user_id"`
 	Cooldown  int64     `bun:"cooldown"`
+	Tag       string    `bun:"-"`
 	IP        string    `bun:"ip"`
 	Email     string    `bun:"email"`
 	Reward    uint64    `bun:"reward"`
