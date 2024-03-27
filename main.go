@@ -18,7 +18,7 @@ func main() {
 		panic("cannot connect to the database")
 	}
 
-	// my token: S50SSP78c7jKH2sQbUVUX1PLcG3m80
+	// my token: a3e6hznQXpbwyTfzfldH86EjhKouor
 
 	router.Initiliaze()
 }

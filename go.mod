@@ -9,6 +9,7 @@ require (
 )
 
 require (
+	github.com/bensch777/discord-webhook-golang v0.0.5 // indirect
 	github.com/fatih/color v1.16.0 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect

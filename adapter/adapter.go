@@ -86,10 +86,10 @@ func (a *UserAdapter) FetchUserByIp(ctx context.Context, u entities.User, ip str
 
 	err = a.Db.NewSelect().
 		Model(&dailys).
-		ColumnExpr("user_id, ip, cooldown, tag, email").
-		Join("Users ON Users.id = Dailys.user_id").
-		Where("ip = ?", ip).
-		Order("cooldown DESC").
+		ColumnExpr("d.user_id, d.ip, d.cooldown, d.email").
+		Join("JOIN \"Users\" ON \"Users\".id = d.user_id").
+		Where("d.ip = ?", ip).
+		Order("d.cooldown DESC").
 		Scan(ctx)
 
 	if err != nil {

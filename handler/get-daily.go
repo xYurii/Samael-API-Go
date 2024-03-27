@@ -6,11 +6,12 @@ import (
 	"apisamael/utils"
 	"context"
 	"fmt"
+	"log"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
+	discordwebhook "github.com/bensch777/discord-webhook-golang"
 	"github.com/gin-gonic/gin"
 )
 
@@ -19,17 +20,22 @@ func RewardDaily(ctx *gin.Context) {
 
 	cooldown := utils.ParseDuration(24)
 	token := ctx.GetHeader("x-stunks-token")
-	ip := getIp(ctx)
-	allowedOrigins := []string{}
-	origin := ctx.GetHeader("Origin")
+	origin := ctx.Request.Header.Get("Origin")
+	ip := utils.GetIP(ctx)
+	allowedOrigins := []string{"https://samaelbot.web.app", "https://samael.cc"}
 
 	if token == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error": "Cannot get the x-stunks-token value.",
+		})
+		ctx.Abort()
 		return
 	}
 
-	if len(allowedOrigins) > 0 && contains(allowedOrigins, origin) {
+	if len(allowedOrigins) > 0 && !utils.ArrayContains(allowedOrigins, origin) {
 		ctx.JSON(http.StatusUnauthorized, gin.H{
-			"status": "error",
+			"status":  "error",
+			"message": "cannot access the API from this origin.",
 		})
 		ctx.Abort()
 		return
@@ -39,12 +45,21 @@ func RewardDaily(ctx *gin.Context) {
 	if err != nil {
 		panic(err.Error())
 	}
+
+	if user.ID == "" {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Cannot access USER data from Discord API",
+		})
+		ctx.Abort()
+		return
+	}
+
 	userDb := entities.User{
 		ID: user.ID,
 	}
 	userData := database.User.GetUser(c, userDb)
 	//FIX THIS IF!!
-	if utils.InCommandCooldown(int64(userData.Daily), 24) {
+	if utils.InCommandCooldown(userData.Daily, 24) {
 		remainingTime := time.Duration(cooldown-(time.Now().UnixNano()/int64(time.Millisecond)-int64(userData.Daily))) * time.Millisecond
 		formattedTime := utils.FormatTime(remainingTime, 3)
 
@@ -71,24 +86,26 @@ func RewardDaily(ctx *gin.Context) {
 		reward *= 2
 	}
 
-	payload := utils.Message{
-		Username:  user.Username,
-		AvatarURL: fmt.Sprintf("https://cdn.discordapp.com/avatars/%s/%s.png", user.ID, user.Avatar),
-		Content:   "fodase.",
-		Embeds: []*utils.Embed{
+	payload := discordwebhook.Hook{
+		Username:   user.Username,
+		Avatar_url: fmt.Sprintf("https://cdn.discordapp.com/avatars/%s/%s.png", user.ID, user.Avatar),
+		Content:    "fodase.",
+		Embeds: []discordwebhook.Embed{
 			{
 				Description: fmt.Sprintf("**%s** (**%s**) coletou o prêmio diário.\nIP: **%s** (Email: **%s**)\nQuantia: **%d**", user.Username, user.ID, ip, user.Email, reward),
 				Title:       "Novo coleta do prêmio diário.",
 				Color:       1752220,
+				Timestamp:   time.Now(),
+				Thumbnail: discordwebhook.Thumbnail{
+					Url: fmt.Sprintf("https://cdn.discordapp.com/avatars/%s/%s.png", user.ID, user.Avatar),
+				},
 			},
 		},
 	}
 
 	blacklistOrgs := []string{"VPN", "OPERA SOFTWARE", "HOST", "OVH", "CLOUD", "QNAX", "M247", "CLOUDMOSA", "ZENLA", "HEG US", "TIER.NET TECHNOLOGIES LLC", "24SHELLS INC", "HOST4GEEKS LLC", "CYBER ASSETS FZCO", "GLOBALTELEHOST CORP", "GTHOST", "LASEWEB USA, INC", "CDNEXT SJC", "DIGITAL OCEAN"}
-	fmt.Println(blacklistOrgs)
 	checkIp, _ := database.User.FetchUserByIp(ctx, userData, ip)
 	isAlt := user.ID != checkIp.UserID
-	fmt.Println(isAlt)
 	ipInfo, _ := utils.GetIPInfo(ip)
 	userData.UserTasks.Daily = true
 
@@ -102,7 +119,7 @@ func RewardDaily(ctx *gin.Context) {
 				return
 			}
 		}
-		database.User.GetDailyReward(c, user, userData, ipInfo, reward, false)
+		// database.User.GetDailyReward(c, user, userData, ipInfo, reward, false)
 	} else if utils.InCommandCooldown(checkIp.Cooldown, 24) {
 		payload.Embeds[0].Title = "IP Barrado por Cooldown"
 		if !isAlt {
@@ -115,7 +132,7 @@ func RewardDaily(ctx *gin.Context) {
 			payload.Embeds[0].Description = fmt.Sprintf("O usuário **%s** (**%s** - Email: **%s**) está tentando resgatar o daily antes do tempo", user.Username, user.ID, user.Email)
 		}
 		payload.Embeds[0].Color = 11022916
-		utils.SendWebhook(os.Getenv("WEBHOOK_URI"), &payload)
+		utils.SendWebhook(payload)
 
 		remainingTime := time.Duration(cooldown-(time.Now().UnixNano()/int64(time.Millisecond)-int64(checkIp.Cooldown))) * time.Millisecond
 
@@ -125,33 +142,19 @@ func RewardDaily(ctx *gin.Context) {
 		})
 		return
 	} else {
-		database.User.GetDailyReward(c, user, userData, ipInfo, 1000, false)
+		//database.User.GetDailyReward(c, user, userData, ipInfo, 1000, false)
 		if isAlt {
 			payload.Embeds[0].Description = fmt.Sprintf("O usuário **%s** está pegando daily com outra conta!\nConta do último daily: **%s** / %s (Email: **%s**)\n\nNova conta: **%s** / %s (Email: **%s**)", user.Username, checkIp.Tag, checkIp.ID, checkIp.Email, user.Username, user.ID, user.Email)
 		}
 	}
 
-	utils.SendWebhook(os.Getenv("WEBHOOK_URI"), &payload)
-
 	ctx.JSON(http.StatusOK, gin.H{
 		"status":   "success",
 		"quantity": reward,
 	})
-}
 
-func getIp(ctx *gin.Context) string {
-	ip := ctx.GetHeader("x-forwarded-for")
-	if ip == "" {
-		ip = ctx.ClientIP()
+	err = utils.SendWebhook(payload)
+	if err != nil {
+		log.Println(err)
 	}
-	return ip
-}
-
-func contains(arr []string, str string) bool {
-	for _, a := range arr {
-		if a == str {
-			return true
-		}
-	}
-	return false
 }

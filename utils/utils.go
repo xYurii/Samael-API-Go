@@ -7,6 +7,8 @@ import (
 	"math/rand"
 	"net/http"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 type DiscordUser struct {
@@ -48,6 +50,26 @@ type IPDetails struct {
 	Proxy         bool    `json:"proxy"`
 	Hosting       bool    `json:"hosting"`
 	Query         string  `json:"query"`
+}
+
+func GetIP(ctx *gin.Context) string {
+	ip := ctx.GetHeader("x-forwarded-for")
+	if ip == "" {
+		ip = ctx.ClientIP()
+	}
+	if ip == "::1" {
+		ip = "45.188.82.5"
+	}
+	return ip
+}
+
+func ArrayContains(arr []string, str string) bool {
+	for _, a := range arr {
+		if a == str {
+			return true
+		}
+	}
+	return false
 }
 
 func RandomInt(min, max uint64) uint64 {
@@ -107,11 +129,11 @@ func ParseDuration(hour int) int64 {
 	return int64((time.Duration(hour) * time.Hour) / time.Millisecond)
 }
 
-func InCommandCooldown(lastUsageTime int64, cooldownHours int) bool {
+func InCommandCooldown(lastUsageTime uint64, cooldownHours int) bool {
 	cooldown := time.Duration(cooldownHours) * time.Hour / time.Millisecond
 	currentTimeMilliseconds := time.Now().UnixNano() / int64(time.Millisecond)
 
-	return currentTimeMilliseconds-lastUsageTime <= int64(cooldown)
+	return uint64(currentTimeMilliseconds)-lastUsageTime <= uint64(cooldown)
 }
 
 func FormatTime(duration time.Duration, maxUnits int) string {
